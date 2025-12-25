@@ -1,11 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Material, Product } from '../types';
 import { getSmartDescription, suggestPrice } from '../services/geminiService';
 
 export const NewProduct: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
   const [product, setProduct] = useState<Partial<Product>>({
     name: '',
     description: '',
@@ -15,6 +18,7 @@ export const NewProduct: React.FC = () => {
     width: 0,
     height: 0,
     depth: 0,
+    image: '',
   });
 
   const validateForm = (): boolean => {
@@ -56,9 +60,26 @@ export const NewProduct: React.FC = () => {
     setLoading(false);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProduct(prev => ({ ...prev, image: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setProduct(prev => ({ ...prev, image: '' }));
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
   const handleSubmit = () => {
     if (validateForm()) {
-      // In a real app, this would be an API call
       alert('¡Producto guardado exitosamente!');
       console.log('Saving product:', product);
     }
@@ -68,7 +89,7 @@ export const NewProduct: React.FC = () => {
     <div className="animate-fade-in-up p-6">
       <header className="flex items-center justify-between mb-8">
         <button onClick={() => window.history.back()} className="p-2 -ml-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
-          <span className="material-icons-round text-2xl">arrow_back</span>
+          <span className="material-icons-round text-2xl text-gray-800 dark:text-white">arrow_back</span>
         </button>
         <h1 className="text-xl font-bold tracking-wide text-gray-900 dark:text-white font-display">Nuevo Producto</h1>
         <button onClick={handleSubmit} className="p-2 -mr-2 rounded-full text-primary hover:bg-gray-200 dark:hover:bg-gray-800">
@@ -76,18 +97,57 @@ export const NewProduct: React.FC = () => {
         </button>
       </header>
 
+      {/* Hidden inputs for file handling */}
+      <input 
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        ref={galleryInputRef} 
+        onChange={handleImageChange} 
+      />
+      <input 
+        type="file" 
+        accept="image/*" 
+        capture="environment" 
+        className="hidden" 
+        ref={cameraInputRef} 
+        onChange={handleImageChange} 
+      />
+
       <div className="flex flex-col items-center justify-center mb-8">
-        <div className="relative group cursor-pointer w-32 h-32 rounded-2xl bg-surface-light dark:bg-surface-dark border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center overflow-hidden hover:border-primary transition-colors">
-          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white">
-            <span className="material-icons-round text-3xl mb-1">add_a_photo</span>
-            <span className="text-xs font-medium">Agregar Foto</span>
-          </div>
+        <div 
+          onClick={() => galleryInputRef.current?.click()}
+          className="relative group cursor-pointer w-32 h-32 rounded-2xl bg-surface-light dark:bg-surface-dark border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center overflow-hidden hover:border-primary transition-all shadow-sm"
+        >
+          {product.image ? (
+            <>
+              <img src={product.image} alt="Preview" className="w-full h-full object-cover" />
+              <button 
+                onClick={removeImage}
+                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+              >
+                <span className="material-icons-round text-sm">close</span>
+              </button>
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white">
+              <span className="material-icons-round text-3xl mb-1">add_a_photo</span>
+              <span className="text-xs font-medium">Agregar Foto</span>
+            </div>
+          )}
         </div>
+        
         <div className="flex gap-4 mt-4">
-          <button className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-surface-light dark:bg-surface-dark rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
+          <button 
+            onClick={() => galleryInputRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-surface-light dark:bg-surface-dark rounded-full shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95 transition-transform"
+          >
             <span className="material-icons-round text-sm text-primary">photo_library</span> Galería
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-surface-light dark:bg-surface-dark rounded-full shadow-sm border border-gray-200 dark:border-gray-700">
+          <button 
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-surface-light dark:bg-surface-dark rounded-full shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95 transition-transform"
+          >
             <span className="material-icons-round text-sm text-primary">camera_alt</span> Cámara
           </button>
         </div>
