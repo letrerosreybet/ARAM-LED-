@@ -1,0 +1,7 @@
+{
+  "name": "Copy of ARAM - Gestión de Neón",
+  "description": "Sistema premium para la gestión de presupuestos, costos e inventario para negocios de iluminación y letreros neón.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
